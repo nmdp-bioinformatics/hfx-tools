@@ -109,6 +109,8 @@ def build_hfx_from_folder(
                 new_loc = f"file://data/{data_file.name}"
                 logger.info(f"Auto-updating frequencyLocation from '{old_loc}' to '{new_loc}'")
                 hfx_obj["metadata"]["frequencyLocation"] = new_loc
+                # Write updated metadata back to file so pack_hfx reads it
+                write_hfx_json(metadata_json, hfx_obj)
     
     # Run validation
     validator = ValidationFramework()

@@ -19,24 +19,21 @@ ifeq ($(FROZEN),1)
   UV_SYNC_FLAGS += --frozen
 endif
 
-.PHONY: help venv sync sync-parquet lock fmt lint test run-pack run-qc run-inspect build clean distclean ci
+.PHONY: help venv sync sync-parquet lock fmt lint test build clean distclean ci
 
 help:
 	@echo "Targets:"
 	@echo "  venv            Create .venv (uv venv)"
 	@echo "  sync            Install deps into .venv (uv sync)"
-	@echo "  sync-parquet    Install deps + parquet extra (uv sync --extra parquet)"
-	@echo "  lock            Generate/refresh uv.lock (uv lock)"
-	@echo "  fmt             Format (ruff format) [if configured]"
-	@echo "  lint            Lint (ruff) [if configured]"
-	@echo "  test            Run tests (pytest) [if configured]"
-	@echo "  run-pack        Example: build a .hfx archive"
-	@echo "  run-qc          Example: compute QC stats"
-	@echo "  run-inspect     Example: inspect .hfx or metadata.json"
-	@echo "  build           Build wheel/sdist (uv build)"
+	@echo "  sync-parquet    Install deps + parquet extra"
+	@echo "  lock            Generate/refresh uv.lock"
+	@echo "  fmt             Format code (ruff format)"
+	@echo "  lint            Lint code (ruff check)"
+	@echo "  test            Run tests (pytest)"
+	@echo "  build           Build wheel/sdist"
 	@echo "  clean           Remove build artifacts"
 	@echo "  distclean       clean + remove .venv"
-	@echo "  ci              Typical CI sequence (sync -> lint -> test -> build)"
+	@echo "  ci              CI sequence (sync -> lint -> test -> build)"
 
 venv:
 	uv venv $(VENV)
@@ -62,22 +59,6 @@ lint: sync
 
 test: sync
 	uv run pytest -q
-
-# ---- Example run targets (adjust paths as needed) ----
-# Usage:
-#   make run-pack META=examples/metadata.json OUT=dist/example.hfx
-META ?= metadata.json
-OUT ?= dist/example.hfx
-HFX ?= dist/example.hfx
-
-run-pack: sync
-	uv run hfx-pack pack $(META) -o $(OUT) --manifest --hash sha256
-
-run-qc: sync
-	uv run hfx-qc qc $(META) --index-row
-
-run-inspect: sync
-	uv run hfx-inspect inspect $(HFX)
 
 # ---- Build ----
 build: sync

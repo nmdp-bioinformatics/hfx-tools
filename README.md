@@ -6,7 +6,7 @@
 Tools for working with HFX submissions (Haplotype Frequency Exchange).
 
 This repo provides composable command line tools and a Streamlit app for building, packing, 
-inspecting, and validating HFX documents. Key features include:
+inspecting, and validating HFX documents, implementing the [HFX specification](https://github.com/nmdp-bioinformatics/hfx). Key features include:
 
 - **`build`** - Build HFX bundles from a folder structure with automatic validation
 - **`pack`** - Pack HFX archives from metadata.json with optional manifests and checksums
@@ -18,7 +18,7 @@ inspecting, and validating HFX documents. Key features include:
 ## Key schema facts
 
 - `metadata.frequencyLocation` controls where frequencies are stored: either `"inline"`
-  or a URI (e.g., `file://data/frequencies.csv`) (see HFX schema).
+  or a URI (e.g., `file://data/frequencies.csv`) (see [HFX specification](https://github.com/nmdp-bioinformatics/hfx)).
   
 - If inline, the JSON may include `frequencyData` (array of `{haplotype, frequency}`).
 
@@ -42,6 +42,55 @@ pip install -e ".[streamlit]"
 # For development
 pip install -e ".[dev,lint]"
 ```
+
+## Quick Start
+
+**5-minute walkthrough** for the most common workflow:
+
+```bash
+# 1. Create input folder with metadata and data
+mkdir -p my_submission/{metadata,data}
+cp my_metadata.json my_submission/metadata/metadata.json
+cp my_frequencies.csv my_submission/data/frequencies.csv
+
+# 2. Build and validate
+hfx-build my_submission -n my_hfx_file
+
+# 3. Done! Check output
+ls -la my_submission/my_hfx_file.hfx
+cat my_submission/my_hfx_file.build.log
+```
+
+For a guided interactive experience, launch the Streamlit web UI:
+```bash
+streamlit run hfx_tools/streamlit_app.py
+```
+
+## Architecture
+
+**hfx-tools** follows a layered architecture:
+
+```
+CLI / Streamlit UI (user-facing)
+    ↓
+build.py (orchestration)
+    ↓
+validators.py (validation rules) ← pack.py (packing logic)
+    ↓
+io.py (file I/O, JSON parsing)
+```
+
+- **CLI layer** (`cli.py`) - Parses command-line arguments and delegates to build/pack/inspect/qc
+- **Build orchestration** (`build.py`) - High-level workflow: reads metadata → detects files → validates → packs
+- **Validation framework** (`validators.py`) - Pluggable validators for extensibility
+- **Packing logic** (`pack.py`) - Low-level archive creation (ZIP with metadata, data, optional manifest)
+- **I/O utilities** (`io.py`) - JSON parsing, file reading, consistent error handling
+
+This design allows hackathon participants to:
+1. Use the CLI for quick workflows
+2. Call `build()` directly from Python for programmatic use
+3. Register custom validators without modifying core code
+4. Extend with custom QC statistics
 
 ## Usage
 
@@ -165,6 +214,123 @@ validator_framework = ValidationFramework()
 validator_framework.register_validator("my_validator", my_custom_validator)
 ```
 
+## Common Use Cases
+
+### Scenario 1: Batch submission from local folder
+
+Build and submit multiple HFX files from organized folders:
+
+```bash
+for dir in submissions/*/; do
+  hfx-build "$dir" -n "$(basename $dir)" -o dist/
+done
+```
+
+### Scenario 2: Remote frequency data
+
+Point to frequencies hosted on Zenodo or S3 without bundling:
+
+```json
+{
+  "frequencyLocation": "https://zenodo.org/record/12345/files/data.csv",
+  ...
+}
+```
+
+Build skips file detection and includes only the metadata:
+```bash
+hfx-build my_submission -n my_file --no-auto-update-location
+```
+
+### Scenario 3: Inline small frequencies
+
+For small datasets, embed frequencies directly in JSON:
+
+```json
+{
+  "frequencyLocation": "inline",
+  "frequencyData": [
+    {"haplotype": "A*01:01", "frequency": 0.123},
+    {"haplotype": "A*01:02", "frequency": 0.456}
+  ]
+}
+```
+
+### Scenario 4: Programmatic use in Python
+
+```python
+from hfx_tools.build import build
+
+result = build(
+    input_folder="my_data/",
+    output_name="my_submission",
+    output_dir="dist/",
+    hash_algorithm="sha256",
+    include_manifest=True
+)
+print(f"Build {'succeeded' if result.success else 'failed'}")
+for validation in result.validations:
+    print(f"  {validation.level}: {validation.message}")
+```
+
+## Developer API
+
+### Using the Validation Framework
+
+```python
+from hfx_tools.validators import ValidationFramework, ValidationResult
+
+# Create framework
+validator = ValidationFramework()
+
+# Add custom validation
+def check_population_size(metadata_json, hfx_obj, data_folder):
+    pop_size = metadata_json.get("populationSize", 0)
+    if pop_size < 100:
+        return ValidationResult(
+            validator_name="population_size",
+            passed=False,
+            message=f"Population too small: {pop_size} < 100",
+            level="warning"
+        )
+    return ValidationResult(
+        validator_name="population_size",
+        passed=True,
+        message=f"Population size OK: {pop_size}",
+        level="info"
+    )
+
+validator.register_validator("population_size", check_population_size)
+
+# Run validations
+results = validator.validate(metadata, hfx, data_folder)
+```
+
+### Building programmatically
+
+```python
+from hfx_tools.build import build
+from hfx_tools.io import read_metadata_json
+
+# Load and modify metadata before building
+metadata = read_metadata_json("metadata.json")
+metadata["submissionNotes"] = "Added via script"
+
+# Build with custom settings
+result = build(
+    input_folder=".",
+    output_name="my_hfx",
+    hash_algorithm="sha256",
+    include_manifest=True
+)
+
+if not result.success:
+    print("Validation errors:")
+    for v in result.validations:
+        if v.level == "error":
+            print(f"  - {v.message}")
+```
+
 ## Package contents
 
 ```
@@ -182,6 +348,98 @@ validator_framework.register_validator("my_validator", my_custom_validator)
 ├── Makefile
 └── pyproject.toml
 ```
+
+## Development & Contributing
+
+### Development setup
+
+```bash
+# Clone and install with dev dependencies
+git clone https://github.com/nmdp-bioinformatics/hfx-tools
+cd hfx-tools
+make sync EXTRAS="dev,lint"
+```
+
+### Running tests and linting
+
+```bash
+make fmt       # Format code
+make lint      # Check code style
+make test      # Run test suite
+make build     # Build distribution
+```
+
+### Project structure for contributors
+
+- **validators.py** - Add new validators here (see `ValidationResult` class)
+- **build.py** - Core build logic, add workflow features here
+- **cli.py** - Command-line entry points, add new commands here
+- **streamlit_app.py** - Web UI, add interactive features here
+
+### Submitting changes
+
+1. Fork the repo
+2. Create a feature branch (`git checkout -b feature/my-feature`)
+3. Add tests for new functionality
+4. Run `make lint test` to verify
+5. Submit a pull request
+
+## Troubleshooting
+
+### Issue: "frequencyLocation not found"
+
+**Cause**: Metadata doesn't include the `frequencyLocation` field.
+
+**Solution**: Add to `metadata.json`:
+```json
+{
+  "frequencyLocation": "file://data/frequencies.csv"
+}
+```
+
+Or use inline frequencies if no external file:
+```json
+{
+  "frequencyLocation": "inline",
+  "frequencyData": [...]
+}
+```
+
+### Issue: Validation errors but can't see why
+
+**Solution**: Check the build log:
+```bash
+hfx-build my_data -n output
+cat my_data/output.build.log    # Detailed validation results
+```
+
+### Issue: File not found in bundle
+
+**Cause**: Data file exists but `metadata.frequencyLocation` points to wrong path.
+
+**Solution**: Ensure relative paths match structure:
+```
+my_data/
+├── metadata/
+│   └── metadata.json    # with frequencyLocation: "file://data/my_file.csv"
+└── data/
+    └── my_file.csv      # ← matches the path
+```
+
+### Issue: Permission denied when creating .venv
+
+**Solution**: Ensure write permission to directory:
+```bash
+mkdir -p ~/.hfx-tools
+make sync VENV=~/.hfx-tools/.venv
+```
+
+## Resources
+
+- [HFX Specification](https://github.com/nmdp-bioinformatics/hfx) - Authoritative format specification and schema
+- [phycus](https://github.com/nmdp-bioinformatics/phycus) - Related NMDP bioinformatics tools
+- [Issues & Discussions](https://github.com/nmdp-bioinformatics/hfx-tools/issues) - Report bugs or suggest features
+- [HFX Spec Issues](https://github.com/nmdp-bioinformatics/hfx/issues) - Discuss spec-related questions
 
 
 

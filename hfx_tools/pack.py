@@ -40,7 +40,16 @@ def pack_hfx(
         # nothing else needed
         pass
     elif kind == "file" and rel is not None:
-        freq_file_path = (metadata_json.parent / rel).resolve()
+        # Determine the base folder for resolving relative paths
+        # If metadata.json is in a "metadata/" subfolder, resolve from parent of that
+        # Otherwise, resolve from the same folder as metadata.json
+        base_folder = metadata_json.parent
+        if base_folder.name == "metadata":
+            # We're in the build folder structure: input/metadata/metadata.json
+            # So resolve relative to input/
+            base_folder = base_folder.parent
+        
+        freq_file_path = (base_folder / rel).resolve()
         if not freq_file_path.exists():
             raise FileNotFoundError(f"Referenced frequency file not found: {freq_file_path}")
 
