@@ -17,12 +17,15 @@ Repository = "https://github.com/nmdp-bioinformatics/hfx-tools"
 [project.optional-dependencies]
 parquet = ["pandas>=2.0", "pyarrow>=14.0"]
 streamlit = ["streamlit>=1.0"]
+GitPython = ["GitPython>=3.1.46"]
+PyGithub = ["PyGithub>=2.9.1"]
 
 [project.scripts]
 hfx-pack = "hfx_tools.cli:main"
 hfx-qc = "hfx_tools.cli:main"
 hfx-inspect = "hfx_tools.cli:main"
 hfx-build = "hfx_tools.cli:main"
+hfx-submit = "hfx_tools.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
@@ -54,4 +57,3 @@ known-first-party = ["hfx_tools"]
 minversion = "8.0"
 addopts = "-q"
 testpaths = ["tests"]
-

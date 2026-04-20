@@ -9,7 +9,9 @@ from .pack import pack_hfx
 from .qc import qc_hfx
 from .inspect import inspect_any
 from .build import build_hfx_from_folder
-
+from .submit import submit_hfx_to_phycus
+from .git import login_into_github, await_token
+from .submit import submit_hfx_to_phycus
 
 def main():
     parser = argparse.ArgumentParser(prog="hfx-tools")
@@ -47,6 +49,10 @@ def main():
     p_build.add_argument("--no-auto-update-location", action="store_true",
                         help="Don't auto-update metadata.frequencyLocation for detected data files")
 
+    # hfx-submit
+    p_submit = sub.add_parser("submit", help="Submit an HFX file to the phycus repository")
+    p_submit.add_argument("hfx_file", type=Path, help="The HFX file build with hfx-build")
+
     args = parser.parse_args()
 
     if args.cmd == "pack":
@@ -81,6 +87,11 @@ def main():
         )
         if not result["success"]:
             raise SystemExit(f"Build failed: {result.get('error', 'validation errors')}")
+    elif args.cmd == "submit":
+        flow = login_into_github()
+        print(f"Open {flow["verification_uri"]} in your browser\nand enter code: {flow["user_code"]}")
+        token = await_token(flow)
+        submit_hfx_to_phycus(token, args.hfx_file)
     else:
         raise SystemExit(f"Unknown command: {args.cmd}")
 
@@ -89,6 +100,6 @@ def main():
 # - `hfx-pack` calls `hfx-tools pack ...`
 # - `hfx-qc` calls `hfx-tools qc ...`
 # - `hfx-inspect` calls `hfx-tools inspect ...`
+# - `hfx-submit` calls `hfx-tools submit ...`
 if __name__ == "__main__":
     main()
-
