@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import logging
+import sys
 from pathlib import Path
 
 from .pack import pack_hfx
@@ -11,7 +12,7 @@ from .inspect import inspect_any
 from .build import build_hfx_from_folder
 
 
-def main():
+def main(argv: list[str] | None = None):
     parser = argparse.ArgumentParser(prog="hfx-tools")
     sub = parser.add_subparsers(dest="cmd", required=True)
 
@@ -45,7 +46,7 @@ def main():
     p_build.add_argument("--no-auto-update-location", action="store_true",
                         help="Don't auto-update metadata.frequencyLocation for detected data files")
 
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     if args.cmd == "pack":
         pack_hfx(
@@ -81,10 +82,25 @@ def main():
         raise SystemExit(f"Unknown command: {args.cmd}")
 
 
-# Convenience entrypoints:
-# - `hfx-pack` calls `hfx-tools pack ...`
-# - `hfx-qc` calls `hfx-tools qc ...`
-# - `hfx-inspect` calls `hfx-tools inspect ...`
+def pack_main() -> None:
+    """Run the pack command without requiring the ``pack`` subcommand."""
+    main(["pack", *sys.argv[1:]])
+
+
+def qc_main() -> None:
+    """Run the QC command without requiring the ``qc`` subcommand."""
+    main(["qc", *sys.argv[1:]])
+
+
+def inspect_main() -> None:
+    """Run the inspect command without requiring the ``inspect`` subcommand."""
+    main(["inspect", *sys.argv[1:]])
+
+
+def build_main() -> None:
+    """Run the build command without requiring the ``build`` subcommand."""
+    main(["build", *sys.argv[1:]])
+
+
 if __name__ == "__main__":
     main()
-

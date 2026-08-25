@@ -154,6 +154,7 @@ hfx-pack metadata.json -o dist/example.hfx --manifest --hash sha256
 ```bash
 hfx-inspect metadata.json       # Inspect a metadata.json file
 hfx-inspect example.hfx         # Inspect a bundled .hfx archive
+hfx-tools inspect example.hfx   # Equivalent generic command
 ```
 
 ### CLI: QC
@@ -178,6 +179,31 @@ The Streamlit app provides:
 - **Validation preview** - Run validators and see results
 - **HFX download** - Download the built .hfx file
 - **Build logs** - View detailed validation and packing logs
+- **HFX inspector** - Browse an existing `.hfx` archive and view its bundled metadata
+
+For folder-based builds, the **Output folder** defaults to `output`, keeping generated archives
+and build logs separate from example or source input folders.
+
+### GitHub sign-in (optional)
+
+The Streamlit app always requires a contributor name, affiliation, and GitHub identity before
+building. GitHub usernames can be entered manually. To also offer **Sign in with GitHub**:
+
+1. Create a GitHub OAuth App.
+2. Set its authorization callback URL to your public Streamlit app URL.
+3. Store these values in your deployment secrets, or in an untracked
+   `.streamlit/secrets.toml` for local use:
+
+   ```toml
+   [github_oauth]
+   client_id = "..."
+   client_secret = "..."
+   redirect_uri = "https://your-app-url/"
+   ```
+
+OAuth is enabled only when all three values are present. It requests the `read:user` scope and
+uses the authenticated GitHub login as the identity. Manual GitHub identity remains available
+when OAuth is not configured. Never commit this secrets file.
 
 ## Validation Framework
 
