@@ -2,16 +2,34 @@
   "version": "0.1.1",
   "metadata": {
     "outputResolution": [
-      { "locus": "A", "resolution": "g" },
-      { "locus": "B", "resolution": "g" },
-      { "locus": "C", "resolution": "g" },
-      { "locus": "DRB1", "resolution": "g" },
-      { "locus": "DQB1", "resolution": "g" }
+      {
+        "locus": "A",
+        "resolution": "g"
+      },
+      {
+        "locus": "B",
+        "resolution": "g"
+      },
+      {
+        "locus": "C",
+        "resolution": "g"
+      },
+      {
+        "locus": "DRB1",
+        "resolution": "g"
+      },
+      {
+        "locus": "DQB1",
+        "resolution": "g"
+      }
     ],
     "hfeMethod": {
       "method": "EM",
       "parameters": [
-        { "parameter": "iterations", "value": "100" }
+        {
+          "parameter": "iterations",
+          "value": "100"
+        }
       ]
     },
     "cohortDescription": {

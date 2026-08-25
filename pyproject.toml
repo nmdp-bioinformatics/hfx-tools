@@ -10,8 +10,8 @@ requires-python = ">=3.10"
 dependencies = []
 
 [project.urls]
-Repository = "https://github.com/nmdp-bioinformatics/hfx-tools"
-"HFX Specification" = "https://github.com/nmdp-bioinformatics/hfx"
+Repository = "https://github.com/immunomath/hfx-tools"
+"HFX Specification" = "https://github.com/immunomath/hfx"
 "Related Tools" = "https://github.com/nmdp-bioinformatics/phycus"
 
 [project.optional-dependencies]
@@ -19,10 +19,11 @@ parquet = ["pandas>=2.0", "pyarrow>=14.0"]
 streamlit = ["streamlit>=1.0"]
 
 [project.scripts]
-hfx-pack = "hfx_tools.cli:main"
-hfx-qc = "hfx_tools.cli:main"
-hfx-inspect = "hfx_tools.cli:main"
-hfx-build = "hfx_tools.cli:main"
+hfx-tools = "hfx_tools.cli:main"
+hfx-pack = "hfx_tools.cli:pack_main"
+hfx-qc = "hfx_tools.cli:qc_main"
+hfx-inspect = "hfx_tools.cli:inspect_main"
+hfx-build = "hfx_tools.cli:build_main"
 
 [tool.setuptools.packages.find]
 where = ["."]
@@ -54,4 +55,3 @@ known-first-party = ["hfx_tools"]
 minversion = "8.0"
 addopts = "-q"
 testpaths = ["tests"]
-
