@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import json
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Mapping, Optional
 
 from .io import read_hfx_json, write_hfx_json
 from .pack import pack_hfx
@@ -19,6 +19,7 @@ def build_hfx_from_folder(
     write_manifest: bool = True,
     hash_alg: str = "sha256",
     auto_update_frequency_location: bool = True,
+    submission_identity: Optional[Mapping[str, Any]] = None,
 ) -> Dict[str, Any]:
     """Build an HFX bundle from a folder.
 
@@ -34,6 +35,7 @@ def build_hfx_from_folder(
         write_manifest: Include MANIFEST.json in archive
         hash_alg: Hash algorithm for manifest ("md5", "sha256", or None)
         auto_update_frequency_location: Auto-update metadata to point to detected data file
+        submission_identity: Identity added only to metadata inside the output bundle
 
     Returns:
         Dictionary with build results including validation results and output path
@@ -129,6 +131,7 @@ def build_hfx_from_folder(
             out_path=output_path,
             write_manifest=write_manifest,
             hash_alg=hash_alg,
+            submission_identity=submission_identity,
         )
         logger.info(f"Successfully created: {output_path}")
     except Exception as e:

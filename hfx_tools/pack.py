@@ -4,10 +4,11 @@ import io
 import json
 import zipfile
 from pathlib import Path
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Mapping, Optional, List
 
 from .io import read_hfx_json, write_hfx_json, parse_frequency_location
 from .util import file_hash
+from .submission_identity import validate_submission_identity
 
 
 def pack_hfx(
@@ -15,6 +16,7 @@ def pack_hfx(
     out_path: Path,
     write_manifest: bool = False,
     hash_alg: Optional[str] = None,
+    submission_identity: Optional[Mapping[str, Any]] = None,
 ) -> None:
     hfx = read_hfx_json(metadata_json)
     # Ensure top-level version per schema
@@ -23,6 +25,11 @@ def pack_hfx(
     md = hfx.get("metadata", {})
     if "frequencyLocation" not in md:
         raise ValueError("metadata.frequencyLocation is required")
+    if submission_identity is not None:
+        # This modifies only the in-memory document that is written to the archive.
+        # The source metadata JSON remains the scientific record supplied by the user.
+        md["submissionIdentity"] = validate_submission_identity(submission_identity)
+        hfx["metadata"] = md
 
     freq_loc = md["frequencyLocation"]
     kind, rel = parse_frequency_location(freq_loc)
@@ -89,4 +96,3 @@ def pack_hfx(
                 if hash_alg in rec:
                     lines.append(f"{rec[hash_alg]}  {rec['path']}")
             z.writestr(f"{hash_alg.upper()}SUMS", ("\n".join(lines) + "\n").encode("utf-8"))
-
