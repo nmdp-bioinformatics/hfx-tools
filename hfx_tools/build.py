@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 import logging
-import json
+from collections.abc import Mapping
 from pathlib import Path
-from typing import Dict, Any, Mapping, Optional
+from typing import Any
 
 from .io import read_hfx_json, write_hfx_json
 from .pack import pack_hfx
-from .validators import ValidationFramework, ValidationResult
+from .validators import ValidationFramework
 
 logger = logging.getLogger(__name__)
 
@@ -15,12 +15,12 @@ logger = logging.getLogger(__name__)
 def build_hfx_from_folder(
     input_folder: Path,
     output_name: str,
-    output_dir: Optional[Path] = None,
+    output_dir: Path | None = None,
     write_manifest: bool = True,
     hash_alg: str = "sha256",
     auto_update_frequency_location: bool = True,
-    submission_identity: Optional[Mapping[str, Any]] = None,
-) -> Dict[str, Any]:
+    submission_identity: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
     """Build an HFX bundle from a folder.
 
     Expected folder structure:
@@ -45,25 +45,22 @@ def build_hfx_from_folder(
         output_dir = input_folder
     else:
         output_dir = Path(output_dir)
-    
+
     output_dir.mkdir(parents=True, exist_ok=True)
-    
+
     # Set up logging
     log_file = output_dir / f"{output_name}.build.log"
     file_handler = logging.FileHandler(log_file)
     file_handler.setLevel(logging.DEBUG)
-    formatter = logging.Formatter(
-        '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    )
+    formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
-    
+
     logger.info(f"Starting HFX build: {output_name}")
     logger.info(f"Input folder: {input_folder}")
 
     # Discover metadata file (single .json at top level, excluding known non-metadata names)
-    metadata_files = [f for f in input_folder.glob("*.json")
-                      if f.name not in ("MANIFEST.json",)]
+    metadata_files = [f for f in input_folder.glob("*.json") if f.name not in ("MANIFEST.json",)]
     if not metadata_files:
         raise FileNotFoundError(f"No JSON metadata file found in: {input_folder}")
     if len(metadata_files) > 1:
@@ -73,9 +70,12 @@ def build_hfx_from_folder(
     logger.info(f"Using metadata file: {metadata_json}")
 
     # Discover data files (non-JSON files at top level)
-    data_files = [f for f in input_folder.glob("*")
-                  if f.is_file() and f.suffix.lower() in (".csv", ".parquet")]
-    
+    data_files = [
+        f
+        for f in input_folder.glob("*")
+        if f.is_file() and f.suffix.lower() in (".csv", ".parquet")
+    ]
+
     # Load and validate
     hfx_obj = read_hfx_json(metadata_json)
 
@@ -88,7 +88,7 @@ def build_hfx_from_folder(
     if "metadata" not in hfx_obj:
         hfx_obj["metadata"] = {}
         logger.warning("Added missing metadata wrapper")
-    
+
     # Auto-detect and update frequency location
     if auto_update_frequency_location and data_files:
         if len(data_files) == 1:
@@ -105,13 +105,13 @@ def build_hfx_from_folder(
     # Run validation
     validator = ValidationFramework()
     validation_results = validator.validate(metadata_json, hfx_obj, input_folder)
-    
+
     # Log validation results
     logger.info("--- Validation Results ---")
     validator.log_results(validation_results, logger)
-    
+
     has_errors = validator.has_errors(validation_results)
-    
+
     if has_errors:
         logger.error("Validation failed; aborting build")
         return {
@@ -120,11 +120,11 @@ def build_hfx_from_folder(
             "validation_results": validation_results,
             "log_file": str(log_file),
         }
-    
+
     # Pack HFX
     output_path = output_dir / f"{output_name}.hfx"
     logger.info(f"Packing HFX: {output_path}")
-    
+
     try:
         pack_hfx(
             metadata_json=metadata_json,
@@ -143,9 +143,9 @@ def build_hfx_from_folder(
             "error": str(e),
             "log_file": str(log_file),
         }
-    
+
     logger.info("Build complete")
-    
+
     return {
         "success": True,
         "output_path": str(output_path),

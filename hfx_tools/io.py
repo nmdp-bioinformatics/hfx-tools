@@ -3,25 +3,25 @@ from __future__ import annotations
 import csv
 import json
 from pathlib import Path
-from typing import Dict, Any, List, Tuple, Optional
+from typing import Any
 from urllib.parse import urlparse
 
 from .util import safe_relpath
 
 
-def read_hfx_json(path: Path) -> Dict[str, Any]:
+def read_hfx_json(path: Path) -> dict[str, Any]:
     with path.open("r", encoding="utf-8") as f:
         return json.load(f)
 
 
-def write_hfx_json(path: Path, obj: Dict[str, Any]) -> None:
+def write_hfx_json(path: Path, obj: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8") as f:
         json.dump(obj, f, indent=2, sort_keys=False)
         f.write("\n")
 
 
-def parse_frequency_location(freq_loc: str) -> Tuple[str, Optional[str]]:
+def parse_frequency_location(freq_loc: str) -> tuple[str, str | None]:
     """
     Returns (kind, value)
       - ("inline", None)
@@ -44,7 +44,7 @@ def parse_frequency_location(freq_loc: str) -> Tuple[str, Optional[str]]:
     return ("file", safe_relpath(freq_loc))
 
 
-def _resolve_header_mapping(hfx_obj: Dict[str, Any]) -> Dict[str, str]:
+def _resolve_header_mapping(hfx_obj: dict[str, Any]) -> dict[str, str]:
     """Return {original_col: canonical_col} from metadata.frequencyFileHeader.
 
     The schema defines frequencyFileHeader as an object mapping CSV header
@@ -53,7 +53,7 @@ def _resolve_header_mapping(hfx_obj: Dict[str, Any]) -> Dict[str, str]:
     return hfx_obj.get("metadata", {}).get("frequencyFileHeader", {})
 
 
-def load_frequency_rows(hfx_path: Path, hfx_obj: Dict[str, Any]) -> List[Tuple[str, float]]:
+def load_frequency_rows(hfx_path: Path, hfx_obj: dict[str, Any]) -> list[tuple[str, float]]:
     md = hfx_obj.get("metadata", {})
     freq_loc = md.get("frequencyLocation")
     if not freq_loc:
@@ -72,7 +72,10 @@ def load_frequency_rows(hfx_path: Path, hfx_obj: Dict[str, Any]) -> List[Tuple[s
         return out
 
     if kind == "http":
-        raise ValueError("http(s) frequencyLocation not supported in MVP loader; please download locally or bundle with file://")
+        raise ValueError(
+            "http(s) frequencyLocation not supported in MVP loader; "
+            "please download locally or bundle with file://"
+        )
 
     # file
     rel = val
@@ -93,18 +96,18 @@ def load_frequency_rows(hfx_path: Path, hfx_obj: Dict[str, Any]) -> List[Tuple[s
     raise ValueError(f"Unsupported frequency file type: {freq_file.suffix}")
 
 
-def _apply_header_map(fieldnames: list, header_map: Dict[str, str]) -> Dict[str, str]:
+def _apply_header_map(fieldnames: list, header_map: dict[str, str]) -> dict[str, str]:
     """Build a reverse lookup: {original_col: canonical_col} for the columns we need."""
     # header_map is {csv_col: canonical_col}, e.g. {"Haplo": "haplotype"}
-    reverse: Dict[str, str] = {}
+    reverse: dict[str, str] = {}
     for orig, canon in header_map.items():
         if orig in fieldnames:
             reverse[orig] = canon
     return reverse
 
 
-def load_csv(path: Path, header_map: Optional[Dict[str, str]] = None) -> List[Tuple[str, float]]:
-    out: List[Tuple[str, float]] = []
+def load_csv(path: Path, header_map: dict[str, str] | None = None) -> list[tuple[str, float]]:
+    out: list[tuple[str, float]] = []
     header_map = header_map or {}
     with path.open("r", encoding="utf-8", newline="") as f:
         reader = csv.DictReader(f)
@@ -127,11 +130,14 @@ def load_csv(path: Path, header_map: Optional[Dict[str, str]] = None) -> List[Tu
     return out
 
 
-def load_parquet(path: Path, header_map: Optional[Dict[str, str]] = None) -> List[Tuple[str, float]]:
+def load_parquet(path: Path, header_map: dict[str, str] | None = None) -> list[tuple[str, float]]:
     try:
         import pandas as pd  # type: ignore
     except Exception as e:
-        raise ImportError("Parquet support requires pandas + pyarrow. Install with: pip install -e '.[parquet]'") from e
+        raise ImportError(
+            "Parquet support requires pandas + pyarrow. "
+            "Install with: pip install 'hfx-tools[parquet]'"
+        ) from e
 
     header_map = header_map or {}
     df = pd.read_parquet(path)
@@ -144,5 +150,4 @@ def load_parquet(path: Path, header_map: Optional[Dict[str, str]] = None) -> Lis
             f"Parquet must have columns haplotype,frequency (or mapped via frequencyFileHeader); "
             f"found {list(df.columns)}"
         )
-    return [(str(h), float(f)) for h, f in zip(df["haplotype"], df["frequency"])]
-
+    return [(str(h), float(f)) for h, f in zip(df["haplotype"], df["frequency"], strict=True)]

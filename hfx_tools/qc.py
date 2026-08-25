@@ -2,15 +2,14 @@ from __future__ import annotations
 
 import json
 import math
-from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Any, List, Tuple
+from typing import Any
 
-from .io import read_hfx_json, write_hfx_json, load_frequency_rows, parse_frequency_location
+from .io import load_frequency_rows, read_hfx_json, write_hfx_json
 from .util import flatten_index_row
 
 
-def _shannon_entropy(freqs: List[float]) -> float:
+def _shannon_entropy(freqs: list[float]) -> float:
     # natural log entropy
     h = 0.0
     for p in freqs:
@@ -19,12 +18,12 @@ def _shannon_entropy(freqs: List[float]) -> float:
     return h
 
 
-def _topk_cumsum(freqs_sorted_desc: List[float], k: int) -> float:
+def _topk_cumsum(freqs_sorted_desc: list[float], k: int) -> float:
     return float(sum(freqs_sorted_desc[:k])) if k > 0 else 0.0
 
 
-def compute_qc(rows: List[Tuple[str, float]], topk: List[int]) -> Dict[str, Any]:
-    warnings: List[str] = []
+def compute_qc(rows: list[tuple[str, float]], topk: list[int]) -> dict[str, Any]:
+    warnings: list[str] = []
 
     haplotypes = [h for h, _ in rows]
     freqs = [f for _, f in rows]
@@ -49,13 +48,13 @@ def compute_qc(rows: List[Tuple[str, float]], topk: List[int]) -> Dict[str, Any]
 
     s = float(sum(usable))
     if abs(s - 1.0) > 1e-6:
-        warnings.append(f"Sum of positive frequencies is {s:.10f} (deviation {abs(s-1.0):.3g})")
+        warnings.append(f"Sum of positive frequencies is {s:.10f} (deviation {abs(s - 1.0):.3g})")
 
     freqs_sorted = sorted(usable, reverse=True)
     h = _shannon_entropy(usable)
     eff = float(math.exp(h)) if h >= 0 else None
 
-    qc: Dict[str, Any] = {
+    qc: dict[str, Any] = {
         "nHaplotypes": n,
         "nUsable": len(usable),
         "nNaN": n_nan,
@@ -76,15 +75,10 @@ def compute_qc(rows: List[Tuple[str, float]], topk: List[int]) -> Dict[str, Any]
     return qc
 
 
-def qc_hfx(metadata_json: Path, write_metadata: bool, index_row: bool, topk: List[int]) -> None:
+def qc_hfx(metadata_json: Path, write_metadata: bool, index_row: bool, topk: list[int]) -> None:
     hfx = read_hfx_json(metadata_json)
     rows = load_frequency_rows(metadata_json, hfx)
     qc = compute_qc(rows, topk=topk)
-
-    # If the frequencies are referenced via file://..., compute MD5 and write to metadata.checkSum (schema says MD5) :contentReference[oaicite:4]{index=4}
-    md = hfx.get("metadata", {})
-    freq_loc = md.get("frequencyLocation")
-    kind, rel = parse_frequency_location(freq_loc)
 
     if write_metadata:
         # Store QC at top-level (not under metadata, which has additionalProperties: false)
@@ -98,4 +92,3 @@ def qc_hfx(metadata_json: Path, write_metadata: bool, index_row: bool, topk: Lis
         print(json.dumps(row, indent=2))
     else:
         print(json.dumps(qc, indent=2))
-

@@ -1,22 +1,22 @@
 from __future__ import annotations
 
-import io
 import json
 import zipfile
+from collections.abc import Mapping
 from pathlib import Path
-from typing import Dict, Any, Mapping, Optional, List
+from typing import Any
 
-from .io import read_hfx_json, write_hfx_json, parse_frequency_location
-from .util import file_hash
+from .io import parse_frequency_location, read_hfx_json
 from .submission_identity import validate_submission_identity
+from .util import file_hash
 
 
 def pack_hfx(
     metadata_json: Path,
     out_path: Path,
     write_manifest: bool = False,
-    hash_alg: Optional[str] = None,
-    submission_identity: Optional[Mapping[str, Any]] = None,
+    hash_alg: str | None = None,
+    submission_identity: Mapping[str, Any] | None = None,
 ) -> None:
     hfx = read_hfx_json(metadata_json)
     # Ensure top-level version per schema
@@ -34,7 +34,7 @@ def pack_hfx(
     freq_loc = md["frequencyLocation"]
     kind, rel = parse_frequency_location(freq_loc)
 
-    files_to_add: List[tuple[Path, str]] = []
+    files_to_add: list[tuple[Path, str]] = []
 
     # Always include metadata.json (submission JSON)
     # We write it into the archive as "metadata.json"
@@ -42,8 +42,8 @@ def pack_hfx(
     # NOTE: If normalize_data_path, we may update metadata.frequencyLocation
     metadata_arcname = "metadata.json"
 
-    freq_file_path: Optional[Path] = None
-    freq_arcname: Optional[str] = None
+    freq_file_path: Path | None = None
+    freq_arcname: str | None = None
 
     if kind == "inline":
         pass
@@ -64,7 +64,7 @@ def pack_hfx(
     # Build MANIFEST entries as we add files
     manifest_files = []
 
-    def _manifest_add(arcname: str, data_bytes: int, digest: Optional[str]):
+    def _manifest_add(arcname: str, data_bytes: int, digest: str | None):
         rec = {"path": arcname, "bytes": int(data_bytes)}
         if digest is not None and hash_alg is not None:
             rec[hash_alg] = digest

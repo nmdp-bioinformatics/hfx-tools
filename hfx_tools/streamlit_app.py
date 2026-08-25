@@ -38,12 +38,14 @@ def _github_login(config: dict[str, str], code: str) -> str:
     """Exchange an OAuth code and retrieve the authenticated GitHub login."""
     token_request = Request(
         "https://github.com/login/oauth/access_token",
-        data=urlencode({
-            "client_id": config["client_id"],
-            "client_secret": config["client_secret"],
-            "code": code,
-            "redirect_uri": config["redirect_uri"],
-        }).encode("utf-8"),
+        data=urlencode(
+            {
+                "client_id": config["client_id"],
+                "client_secret": config["client_secret"],
+                "code": code,
+                "redirect_uri": config["redirect_uri"],
+            }
+        ).encode("utf-8"),
         headers={"Accept": "application/json", "User-Agent": "hfx-tools"},
         method="POST",
     )
@@ -84,12 +86,14 @@ def _render_submission_identity_form() -> dict[str, str] | None:
 
         state = secrets.token_urlsafe(32)
         st.session_state["github_oauth_state"] = state
-        auth_url = "https://github.com/login/oauth/authorize?" + urlencode({
-            "client_id": config["client_id"],
-            "redirect_uri": config["redirect_uri"],
-            "scope": "read:user",
-            "state": state,
-        })
+        auth_url = "https://github.com/login/oauth/authorize?" + urlencode(
+            {
+                "client_id": config["client_id"],
+                "redirect_uri": config["redirect_uri"],
+                "scope": "read:user",
+                "state": state,
+            }
+        )
         st.link_button("Sign in with GitHub", auth_url)
     else:
         st.caption("GitHub OAuth is not configured; enter a GitHub username below.")
@@ -105,12 +109,14 @@ def _render_submission_identity_form() -> dict[str, str] | None:
         submitted = st.form_submit_button("Save submission identity")
     if submitted:
         try:
-            st.session_state["submission_identity"] = validate_submission_identity({
-                "name": name,
-                "affiliation": affiliation,
-                "github": github,
-                "orcid": orcid,
-            })
+            st.session_state["submission_identity"] = validate_submission_identity(
+                {
+                    "name": name,
+                    "affiliation": affiliation,
+                    "github": github,
+                    "orcid": orcid,
+                }
+            )
             st.success("Submission identity saved.")
         except ValueError as exc:
             st.session_state.pop("submission_identity", None)
@@ -141,9 +147,7 @@ def _render_hfx_inspector() -> None:
 def main():
     st.set_page_config(page_title="HFX Builder", layout="wide")
     st.title("🧬 HFX Builder")
-    st.markdown(
-        "Build HFX (Haplotype Frequency Exchange) bundles from metadata and data files."
-    )
+    st.markdown("Build HFX (Haplotype Frequency Exchange) bundles from metadata and data files.")
     submission_identity = _render_submission_identity_form()
     _render_hfx_inspector()
 
@@ -152,17 +156,13 @@ def main():
         output_name = st.text_input(
             "Output filename",
             value="output",
-            help="Name for the output .hfx file (without extension)"
+            help="Name for the output .hfx file (without extension)",
         )
         write_manifest = st.checkbox(
-            "Write MANIFEST.json",
-            value=True,
-            help="Include manifest file in archive"
+            "Write MANIFEST.json", value=True, help="Include manifest file in archive"
         )
         hash_alg = st.selectbox(
-            "Hash algorithm",
-            options=["sha256", "md5", None],
-            help="Include checksums in manifest"
+            "Hash algorithm", options=["sha256", "md5", None], help="Include checksums in manifest"
         )
         output_dir = st.text_input(
             "Output folder",
@@ -186,10 +186,7 @@ def main():
 
     with col1:
         st.subheader("Option 1: Use Local Folder")
-        folder_path = st.text_input(
-            "Path to input folder",
-            placeholder="/path/to/input_folder"
-        )
+        folder_path = st.text_input("Path to input folder", placeholder="/path/to/input_folder")
 
     with col2:
         st.subheader("Option 2: Upload Files")
@@ -198,15 +195,13 @@ def main():
             "update `metadata.frequencyLocation` to point to the data file."
         )
         uploaded_metadata = st.file_uploader(
-            "Upload metadata.json",
-            type=["json"],
-            key="metadata_upload"
+            "Upload metadata.json", type=["json"], key="metadata_upload"
         )
         uploaded_data = st.file_uploader(
             "Upload frequency data (CSV or Parquet)",
             type=["csv", "parquet"],
             key="data_upload",
-            help="Optional: auto-updates metadata.frequencyLocation"
+            help="Optional: auto-updates metadata.frequencyLocation",
         )
 
     if folder_path:
@@ -234,9 +229,7 @@ def main():
             try:
                 validator = ValidationFramework()
                 results = validator.validate(
-                    metadata_files[0],
-                    read_hfx_json(metadata_files[0]),
-                    input_folder
+                    metadata_files[0], read_hfx_json(metadata_files[0]), input_folder
                 )
                 st.subheader("Validation Results")
                 for r in results:
@@ -274,7 +267,7 @@ def main():
                                 label="⬇️ Download HFX",
                                 data=f.read(),
                                 file_name=output_file.name,
-                                mime="application/zip"
+                                mime="application/zip",
                             )
                     passed = sum(1 for r in result["validation_results"] if r.passed)
                     total = len(result["validation_results"])
@@ -341,7 +334,7 @@ def main():
                                     label="⬇️ Download HFX",
                                     data=f.read(),
                                     file_name=output_file.name,
-                                    mime="application/zip"
+                                    mime="application/zip",
                                 )
                     else:
                         st.error("❌ Build failed!")

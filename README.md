@@ -3,7 +3,7 @@
 Tools for working with HFX submissions (Haplotype Frequency Exchange).
 
 This repo provides composable command line tools and a Streamlit app for building, packing,
-inspecting, and validating HFX documents, implementing the [HFX specification](https://github.com/nmdp-bioinformatics/hfx). Key features include:
+inspecting, and validating HFX documents, implementing the [HFX specification](https://github.com/societyforimmunepolymorphism/hfx). Key features include:
 
 - **`build`** - Build HFX bundles from a folder with automatic validation
 - **`pack`** - Pack HFX archives from metadata.json with optional manifests and checksums
@@ -15,7 +15,7 @@ inspecting, and validating HFX documents, implementing the [HFX specification](h
 ## Key schema facts
 
 - `metadata.frequencyLocation` controls where frequencies are stored: either `"inline"`
-  or a URI (e.g., `file://frequencies.csv`) (see [HFX specification](https://github.com/nmdp-bioinformatics/hfx)).
+  or a URI (e.g., `file://frequencies.csv`) (see [HFX specification](https://github.com/societyforimmunepolymorphism/hfx)).
 
 - If inline, the JSON may include `frequencyData` (array of `{haplotype, frequency}`).
 
@@ -25,22 +25,19 @@ inspecting, and validating HFX documents, implementing the [HFX specification](h
 ## Install
 
 ### Basic installation
+
 ```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -e .
+pip install hfx-tools
 ```
 
 ### With optional dependencies
+
 ```bash
 # For Parquet support
-pip install -e ".[parquet]"
+pip install "hfx-tools[parquet]"
 
 # For Streamlit web UI
-pip install -e ".[streamlit]"
-
-# For development
-pip install -e ".[dev,lint]"
+pip install "hfx-tools[streamlit]"
 ```
 
 ## Quick Start
@@ -63,7 +60,7 @@ cat my_submission/my_hfx_file.build.log
 
 For a guided interactive experience, launch the Streamlit web UI:
 ```bash
-streamlit run hfx_tools/streamlit_app.py
+streamlit run "$(python -c 'import hfx_tools.streamlit_app as app; print(app.__file__)')"
 ```
 
 ## Architecture
@@ -168,7 +165,7 @@ hfx-qc metadata.json --write-metadata --topk 10 100 1000
 Launch the interactive web interface:
 
 ```bash
-streamlit run hfx_tools/streamlit_app.py
+streamlit run "$(python -c 'import hfx_tools.streamlit_app as app; print(app.__file__)')"
 ```
 
 The Streamlit app provides:
@@ -223,13 +220,15 @@ error-level validations fail.
 ```python
 from hfx_tools.validators import ValidationFramework, ValidationResult
 
+
 def my_custom_validator(metadata_json, hfx_obj, data_folder):
     return ValidationResult(
         validator_name="my_validator",
         passed=True,
         message="My validation passed",
-        level="info"  # or "warning", "error"
+        level="info",  # or "warning", "error"
     )
+
 
 validator_framework = ValidationFramework()
 validator_framework.register_validator("my_validator", my_custom_validator)
@@ -310,6 +309,7 @@ from hfx_tools.validators import ValidationFramework, ValidationResult
 
 validator = ValidationFramework()
 
+
 def check_cohort_size(metadata_json, hfx_obj, data_folder):
     size = hfx_obj.get("metadata", {}).get("cohortDescription", {}).get("cohortSize", 0)
     if size < 100:
@@ -317,14 +317,12 @@ def check_cohort_size(metadata_json, hfx_obj, data_folder):
             validator_name="cohort_size",
             passed=False,
             message=f"Cohort too small: {size} < 100",
-            level="warning"
+            level="warning",
         )
     return ValidationResult(
-        validator_name="cohort_size",
-        passed=True,
-        message=f"Cohort size OK: {size}",
-        level="info"
+        validator_name="cohort_size", passed=True, message=f"Cohort size OK: {size}", level="info"
     )
+
 
 validator.register_validator("cohort_size", check_cohort_size)
 results = validator.validate(metadata_path, hfx_obj, data_folder)
@@ -351,9 +349,12 @@ hfx_tools/
 ### Development setup
 
 ```bash
-git clone https://github.com/nmdp-bioinformatics/hfx-tools
+git clone https://github.com/societyforimmunepolymorphism/hfx-tools
 cd hfx-tools
-make sync EXTRAS="dev,lint"
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --editable .
+python -m pip install pytest ruff build
 ```
 
 ### Running tests and linting
@@ -429,7 +430,7 @@ make sync VENV=~/.hfx-tools/.venv
 
 ## Resources
 
-- [HFX Specification](https://github.com/nmdp-bioinformatics/hfx) - Authoritative format specification and schema
+- [HFX Specification](https://github.com/societyforimmunepolymorphism/hfx) - Authoritative format specification and schema
 - [phycus](https://github.com/nmdp-bioinformatics/phycus) - Related NMDP bioinformatics tools
-- [Issues & Discussions](https://github.com/nmdp-bioinformatics/hfx-tools/issues) - Report bugs or suggest features
-- [HFX Spec Issues](https://github.com/nmdp-bioinformatics/hfx/issues) - Discuss spec-related questions
+- [Issues & Discussions](https://github.com/societyforimmunepolymorphism/hfx-tools/issues) - Report bugs or suggest features
+- [HFX Spec Issues](https://github.com/societyforimmunepolymorphism/hfx/issues) - Discuss spec-related questions

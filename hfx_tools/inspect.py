@@ -3,12 +3,12 @@ from __future__ import annotations
 import json
 import zipfile
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 from .io import read_hfx_json
 
 
-def _print_summary(hfx: Dict[str, Any], label: str) -> None:
+def _print_summary(hfx: dict[str, Any], label: str) -> None:
     version = hfx.get("version", "(missing)")
     md = hfx.get("metadata", {})
     cohort = md.get("cohortDescription", {}) or {}
@@ -49,4 +49,3 @@ def inspect_any(path: Path) -> None:
     else:
         hfx = read_hfx_json(path)
         _print_summary(hfx, str(path))
-

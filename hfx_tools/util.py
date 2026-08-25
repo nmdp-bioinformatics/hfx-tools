@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import hashlib
 from pathlib import Path
-from typing import Iterable, Dict, Any
+from typing import Any
 
 
 def file_hash(path: Path, alg: str) -> str:
@@ -23,7 +23,7 @@ def safe_relpath(path_str: str) -> str:
     return p.as_posix()
 
 
-def flatten_index_row(hfx: Dict[str, Any], qc: Dict[str, Any]) -> Dict[str, Any]:
+def flatten_index_row(hfx: dict[str, Any], qc: dict[str, Any]) -> dict[str, Any]:
     md = hfx.get("metadata", {})
     cohort = md.get("cohortDescription", {}) or {}
     pops = cohort.get("population", []) or []
@@ -32,7 +32,9 @@ def flatten_index_row(hfx: Dict[str, Any], qc: Dict[str, Any]) -> Dict[str, Any]
     # outputResolution is an array of {locus, resolution}
     out_res = md.get("outputResolution", []) or []
     loci = [x.get("locus") for x in out_res if isinstance(x, dict) and x.get("locus")]
-    resolutions = [x.get("resolution") for x in out_res if isinstance(x, dict) and x.get("resolution")]
+    resolutions = [
+        x.get("resolution") for x in out_res if isinstance(x, dict) and x.get("resolution")
+    ]
 
     nomen = md.get("nomenclatureUsed", {}) or {}
     hfe = md.get("hfeMethod", {}) or {}
@@ -59,4 +61,3 @@ def flatten_index_row(hfx: Dict[str, Any], qc: Dict[str, Any]) -> Dict[str, Any]
         **{f"qc_{k}": v for k, v in qc.items() if k != "warnings"},
         "qc_warnings": qc.get("warnings", []),
     }
-

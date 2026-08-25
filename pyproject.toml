@@ -1,17 +1,48 @@
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "hfx-tools"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Tools for building, inspecting, and QC'ing HFX submissions"
+readme = "README.md"
 requires-python = ">=3.10"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+authors = [
+  { name = "Society for Immune Polymorphism" },
+]
+maintainers = [
+  { name = "Martin Maiers" },
+]
+keywords = [
+  "bioinformatics",
+  "haplotype",
+  "HLA",
+  "immunogenetics",
+  "population genetics",
+]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Science/Research",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Topic :: Scientific/Engineering :: Bio-Informatics",
+]
 dependencies = []
 
 [project.urls]
-Repository = "https://github.com/immunomath/hfx-tools"
-"HFX Specification" = "https://github.com/immunomath/hfx"
+Homepage = "https://github.com/societyforimmunepolymorphism/hfx-tools"
+Repository = "https://github.com/societyforimmunepolymorphism/hfx-tools"
+Issues = "https://github.com/societyforimmunepolymorphism/hfx-tools/issues"
+"HFX Specification" = "https://github.com/societyforimmunepolymorphism/hfx"
 "Related Tools" = "https://github.com/nmdp-bioinformatics/phycus"
 
 [project.optional-dependencies]
@@ -29,6 +60,8 @@ hfx-build = "hfx_tools.cli:build_main"
 where = ["."]
 include = ["hfx_tools*"]
 
+[tool.setuptools.dynamic]
+version = { attr = "hfx_tools.__version__" }
 
 [dependency-groups]
 # uv dependency groups (install via `uv sync`; include all groups by default)

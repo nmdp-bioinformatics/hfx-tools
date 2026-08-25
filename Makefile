@@ -38,12 +38,12 @@ help:
 	@echo "  ci              CI sequence (sync -> lint -> test -> build)"
 
 venv:
-	uv venv $(VENV)
+	uv venv --allow-existing $(VENV)
 
 # Install project deps (and the project itself) into .venv
 # Use EXTRAS="parquet" to include optional extras
 sync: venv
-	uv sync $(UV_SYNC_FLAGS) $(if $(EXTRAS),--extra $(EXTRAS),)
+	uv sync --all-groups $(UV_SYNC_FLAGS) $(if $(EXTRAS),--extra $(EXTRAS),)
 
 sync-parquet:
 	$(MAKE) sync EXTRAS="parquet"
@@ -73,7 +73,8 @@ test: sync
 
 # ---- Build ----
 build: sync
-	uv build
+	uv build --wheel
+	uv build --sdist
 
 clean:
 	rm -rf build/ dist/ *.egg-info .pytest_cache .ruff_cache .mypy_cache
@@ -83,7 +84,6 @@ distclean: clean
 
 ci:
 	$(MAKE) sync FROZEN=1
-	-$(MAKE) lint FROZEN=1
-	-$(MAKE) test FROZEN=1
+	$(MAKE) lint FROZEN=1
+	$(MAKE) test FROZEN=1
 	$(MAKE) build FROZEN=1
-
